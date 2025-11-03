@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import '../providers/schedule_provider.dart';
 import 'attendance_history_screen.dart';
 import 'profile_screen.dart';
+import 'notification_screen.dart'; // ... existing code ...
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -65,6 +66,8 @@ class _HomeScreenState extends State<HomeScreen> {
         BottomNavigationBarItem(
             icon: Icon(Icons.history_outlined), label: 'Riwayat'),
         BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_outlined), label: 'Notifikasi'),
+        BottomNavigationBarItem(
             icon: Icon(Icons.person_outline), label: 'Profil'),
       ],
     );
@@ -77,6 +80,8 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return const AttendanceHistoryScreen();
       case 2:
+        return const NotificationScreen();
+      case 3:
         return const ProfileScreen();
       default:
         return const _HomeContent();

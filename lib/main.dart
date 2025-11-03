@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'providers/auth_provider.dart';
 import 'providers/schedule_provider.dart'; // menambahkan import untuk ScheduleProvider
 import 'providers/attendance_history_provider.dart'; // menambahkan import untuk AttendanceHistoryProvider
+import 'providers/notification_provider.dart'; // menambahkan import untuk NotificationProvider
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -37,6 +38,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => AttendanceHistoryProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => NotificationProvider(),
         ),
       ],
       child: MaterialApp(
