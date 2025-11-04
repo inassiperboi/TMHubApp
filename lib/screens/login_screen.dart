@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -12,8 +13,19 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final supabase = Supabase.instance.client;
+  late String imageUrl;
   bool _obscurePassword = true;
 
+@override
+  void initState() {
+    super.initState();
+
+    // ✅ Ambil URL gambar dari Supabase Storage (bucket: logo, file: apk.jpg)
+    imageUrl = supabase.storage
+        .from('logo')
+        .getPublicUrl('apk.jpg');
+  }
   @override
   void dispose() {
     _emailController.dispose();
@@ -43,6 +55,14 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+// final supabase = Supabase.instance.client;
+
+// // Jika bucket publik:
+// final imageUrl = supabase.storage
+//     .from('images')
+//     .getPublicUrl('profile123.png');
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,9 +90,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     child: Image.network(
-                      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo_trustmedis-nD3fSK70XcXaLeg9Xc37a9hcL9btvi.png',
-                      fit: BoxFit.contain,
-                    ),
+              imageUrl,
+              width: 120,
+              height: 120,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(Icons.image_not_supported, size: 100);
+              },
+            ),
+                    // child: Image.network(
+                    //   'https://stsukntjvdvmjeimfunp.supabase.co/storage/v1/object/public/logo/apk.jpg',
+                    //   fit: BoxFit.contain,
+                    // ),
                   ),
                   const SizedBox(height: 60),
                   const Text(

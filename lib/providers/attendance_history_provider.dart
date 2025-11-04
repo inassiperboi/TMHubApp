@@ -9,12 +9,14 @@ class AttendanceHistoryProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   
-  String? _selectedMonth; // Format: "2025-11" (YYYY-MM)
+  int? _selectedMonth;
+  int? _selectedYear;
 
   List<Map<String, dynamic>> get attendanceHistory => _attendanceHistory;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  String? get selectedMonth => _selectedMonth;
+  int? get selectedMonth => _selectedMonth;
+  int? get selectedYear => _selectedYear;
 
   Future<void> fetchAttendanceHistory(String userId) async {
     _isLoading = true;
@@ -44,46 +46,52 @@ class AttendanceHistoryProvider extends ChangeNotifier {
     }
   }
 
-  void selectMonth(String monthYear) {
-    if (_selectedMonth == monthYear) {
-      _selectedMonth = null; // Deselect jika klik 2x
-    } else {
-      _selectedMonth = monthYear;
-    }
+  void setFilterMonth(int? month) {
+    _selectedMonth = month;
     notifyListeners();
   }
 
-  Map<String, List<Map<String, dynamic>>> get groupedAttendanceByMonth {
-    final grouped = <String, List<Map<String, dynamic>>>{};
-    
+  void setFilterYear(int? year) {
+    _selectedYear = year;
+    notifyListeners();
+  }
+
+  List<int> get availableYears {
+    final years = <int>{};
     for (var record in _attendanceHistory) {
       final tanggal = record['tanggal'] as String?;
       if (tanggal != null) {
         try {
           final date = DateTime.parse(tanggal);
-          final monthYear = '${date.year}-${date.month.toString().padLeft(2, '0')}';
-          
-          if (!grouped.containsKey(monthYear)) {
-            grouped[monthYear] = [];
-          }
-          grouped[monthYear]!.add(record);
+          years.add(date.year);
         } catch (e) {
-          print('[v0] Error parsing date: $tanggal');
+          // ignore
         }
       }
     }
-    
-    return grouped;
+    return years.toList()..sort((a, b) => b.compareTo(a));
   }
 
-  List<String> get sortedMonths {
-    final months = groupedAttendanceByMonth.keys.toList();
-    months.sort((a, b) => b.compareTo(a));
-    return months;
+  List<int> get availableMonths {
+    final months = <int>{};
+    for (var record in _attendanceHistory) {
+      final tanggal = record['tanggal'] as String?;
+      if (tanggal != null) {
+        try {
+          final date = DateTime.parse(tanggal);
+          if (_selectedYear == null || date.year == _selectedYear) {
+            months.add(date.month);
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+    return months.toList()..sort((a, b) => b.compareTo(a));
   }
 
   List<Map<String, dynamic>> get filteredAttendance {
-    if (_selectedMonth == null) {
+    if (_selectedMonth == null && _selectedYear == null) {
       return _attendanceHistory;
     }
     
@@ -93,11 +101,20 @@ class AttendanceHistoryProvider extends ChangeNotifier {
       
       try {
         final date = DateTime.parse(tanggal);
-        final monthYear = '${date.year}-${date.month.toString().padLeft(2, '0')}';
-        return monthYear == _selectedMonth;
+        
+        bool matchYear = _selectedYear == null || date.year == _selectedYear;
+        bool matchMonth = _selectedMonth == null || date.month == _selectedMonth;
+        
+        return matchYear && matchMonth;
       } catch (e) {
         return false;
       }
     }).toList();
+  }
+
+  void resetFilters() {
+    _selectedMonth = null;
+    _selectedYear = null;
+    notifyListeners();
   }
 }

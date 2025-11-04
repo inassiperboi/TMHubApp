@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'providers/auth_provider.dart';
-import 'providers/schedule_provider.dart'; // menambahkan import untuk ScheduleProvider
-import 'providers/attendance_history_provider.dart'; // menambahkan import untuk AttendanceHistoryProvider
-import 'providers/notification_provider.dart'; // menambahkan import untuk NotificationProvider
+import 'providers/schedule_provider.dart';
+import 'providers/attendance_history_provider.dart';
+import 'providers/notification_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'TrustMedis Presensi',
+        title: 'Employee Attendance',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF003366)),
           useMaterial3: true,
