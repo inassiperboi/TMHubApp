@@ -204,7 +204,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: const Color(0xFF1E4471), // #1E4471
         foregroundColor: Colors.white,
       ),
       body: Container(

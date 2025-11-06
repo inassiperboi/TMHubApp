@@ -6,14 +6,18 @@ class NotificationProvider extends ChangeNotifier {
   final supabase = Supabase.instance.client;
 
   List<Map<String, dynamic>> _newScheduleNotifications = [];
+  List<Map<String, dynamic>> _generalNotifications = [];
   bool _isListening = false;
   StreamSubscription? _streamSubscription;
 
   // Getters
   List<Map<String, dynamic>> get newScheduleNotifications =>
       _newScheduleNotifications;
-  bool get hasNotifications => _newScheduleNotifications.isNotEmpty;
-  int get notificationCount => _newScheduleNotifications.length;
+  List<Map<String, dynamic>> get generalNotifications => _generalNotifications;
+  bool get hasNotifications =>
+      _newScheduleNotifications.isNotEmpty || _generalNotifications.isNotEmpty;
+  int get notificationCount =>
+      _newScheduleNotifications.length + _generalNotifications.length;
 
   void initializeNotificationListener() {
     if (_isListening) return;
@@ -23,6 +27,7 @@ class NotificationProvider extends ChangeNotifier {
 
     _streamSubscription = Stream.periodic(Duration(seconds: 10)).listen((_) async {
       await _checkForNewSchedules();
+      await _fetchGeneralNotifications();
     });
 
     print('[v0] Notification listener started (polling every 10 seconds)');
@@ -56,6 +61,7 @@ class NotificationProvider extends ChangeNotifier {
               ...schedule,
               'notificationTime': DateTime.now(),
               'isRead': false,
+              'type': 'schedule',
             });
           }
         }
@@ -67,7 +73,43 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  // Tandai notifikasi sebagai sudah dibaca
+  Future<void> _fetchGeneralNotifications() async {
+    try {
+      print('[v0] Fetching general notifications from notifikasi table');
+
+      final response = await supabase
+          .from('notifikasi')
+          .select()
+          .order('created_at', ascending: false)
+          .limit(20);
+
+      if (response.isNotEmpty) {
+        final notifications = List<Map<String, dynamic>>.from(response);
+        
+        // Check for new notifications
+        for (var notification in notifications) {
+          final exists = _generalNotifications.any(
+            (notif) => notif['id_notifikasi'] == notification['id_notifikasi'],
+          );
+
+          if (!exists) {
+            print('[v0] New general notification detected: ${notification['id_notifikasi']}');
+            _generalNotifications.insert(0, {
+              ...notification,
+              'notificationTime': DateTime.now(),
+              'isRead': false,
+              'type': 'general',
+            });
+          }
+        }
+
+        notifyListeners();
+      }
+    } catch (e) {
+      print('[v0] Error fetching general notifications: ${e.toString()}');
+    }
+  }
+
   void markAsRead(int index) {
     if (index >= 0 && index < _newScheduleNotifications.length) {
       _newScheduleNotifications[index]['isRead'] = true;
@@ -75,7 +117,6 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  // Hapus notifikasi
   void removeNotification(int index) {
     if (index >= 0 && index < _newScheduleNotifications.length) {
       _newScheduleNotifications.removeAt(index);
@@ -83,13 +124,19 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  // Hapus semua notifikasi
+  void removeGeneralNotification(int index) {
+    if (index >= 0 && index < _generalNotifications.length) {
+      _generalNotifications.removeAt(index);
+      notifyListeners();
+    }
+  }
+
   void clearAllNotifications() {
     _newScheduleNotifications.clear();
+    _generalNotifications.clear();
     notifyListeners();
   }
 
-  // Fetch notifikasi dari database untuk jadwal yang dibuat hari ini
   Future<void> fetchTodayNotifications() async {
     try {
       final today = DateTime.now();
@@ -111,8 +158,11 @@ class NotificationProvider extends ChangeNotifier {
                 ...schedule,
                 'notificationTime': DateTime.now(),
                 'isRead': false,
+                'type': 'schedule',
               })
           .toList();
+
+      await _fetchGeneralNotifications();
 
       notifyListeners();
     } catch (e) {

@@ -37,7 +37,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: const Color(0xFF1E4471), // #1E4471
         foregroundColor: Colors.white,
       ),
       body: Container(
@@ -50,7 +50,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         ),
         child: Consumer<NotificationProvider>(
           builder: (context, notificationProvider, _) {
-            if (notificationProvider.newScheduleNotifications.isEmpty) {
+            if (!notificationProvider.hasNotifications) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -71,7 +71,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     ),
                     SizedBox(height: isTablet ? 10 : 5),
                     Text(
-                      'Notifikasi jadwal baru akan muncul di sini',
+                      'Semua notifikasi akan muncul di sini',
                       style: TextStyle(
                         color: Colors.grey[500],
                         fontSize: isTablet ? 16 : 14,
@@ -81,6 +81,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 ),
               );
             }
+
+            final allNotifications = [
+              ...notificationProvider.newScheduleNotifications,
+              ...notificationProvider.generalNotifications,
+            ];
+            allNotifications.sort((a, b) =>
+                (b['created_at'] ?? '').compareTo(a['created_at'] ?? ''));
 
             return Column(
               children: [
@@ -110,7 +117,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Jadwal Baru',
+                                'Semua Notifikasi',
                                 style: TextStyle(
                                   fontSize: isTablet ? 18 : 16,
                                   fontWeight: FontWeight.bold,
@@ -155,202 +162,31 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 Expanded(
                   child: ListView.builder(
                     padding: EdgeInsets.all(isTablet ? 20 : 16),
-                    itemCount:
-                        notificationProvider.newScheduleNotifications.length,
+                    itemCount: allNotifications.length,
                     itemBuilder: (context, index) {
-                      final notification =
-                          notificationProvider.newScheduleNotifications[index];
+                      final notification = allNotifications[index];
                       final isRead = notification['isRead'] ?? false;
+                      final type = notification['type'] ?? 'general';
 
-                      return Container(
-                        margin: EdgeInsets.only(bottom: isTablet ? 16 : 12),
-                        decoration: BoxDecoration(
-                          color: isRead
-                              ? Colors.white.withOpacity(0.8)
-                              : Colors.white,
-                          border: Border.all(
-                            color: isRead
-                                ? Colors.grey[300]!
-                                : Colors.blueAccent,
-                            width: isRead ? 1 : 2,
-                          ),
-                          borderRadius: BorderRadius.circular(
-                            isTablet ? 20 : 16,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.all(isTablet ? 20 : 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Top row: icon and title
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(isTablet ? 12 : 10),
-                                    decoration: BoxDecoration(
-                                      color: Colors.greenAccent.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      Icons.calendar_today_outlined,
-                                      color: Colors.green[700],
-                                      size: isTablet ? 24 : 20,
-                                    ),
-                                  ),
-                                  SizedBox(width: isTablet ? 15 : 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Jadwal Baru',
-                                          style: TextStyle(
-                                            fontWeight: isRead
-                                                ? FontWeight.normal
-                                                : FontWeight.bold,
-                                            fontSize: isTablet ? 18 : 16,
-                                            color: isRead
-                                                ? Colors.black87
-                                                : Colors.blueAccent,
-                                          ),
-                                        ),
-                                        SizedBox(
-                                            height: isTablet ? 6 : 4),
-                                        Text(
-                                          'Admin telah membuat jadwal baru',
-                                          style: TextStyle(
-                                            fontSize: isTablet ? 14 : 12,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: isTablet ? 16 : 12),
-
-                              // Schedule details
-                              Container(
-                                padding: EdgeInsets.all(isTablet ? 16 : 12),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue[50],
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.blueAccent.withOpacity(0.2),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildDetailRow(
-                                      context,
-                                      Icons.calendar_month_outlined,
-                                      'Tanggal',
-                                      notification['tanggal'] ?? '-',
-                                      isTablet,
-                                    ),
-                                    SizedBox(height: isTablet ? 12 : 8),
-                                    _buildDetailRow(
-                                      context,
-                                      Icons.today_outlined,
-                                      'Hari',
-                                      notification['nama_hari'] ?? '-',
-                                      isTablet,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: isTablet ? 16 : 12),
-
-                              // Time and actions
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    _formatTime(
-                                        notification['notificationTime']),
-                                    style: TextStyle(
-                                      fontSize: isTablet ? 13 : 12,
-                                      color: Colors.grey[500],
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
-                                  Row(
-                                    children: [
-                                      if (!isRead)
-                                        ElevatedButton.icon(
-                                          onPressed: () {
-                                            notificationProvider
-                                                .markAsRead(index);
-                                          },
-                                          icon: const Icon(Icons.done, size: 16),
-                                          label: Text(
-                                            'Tandai dibaca',
-                                            style: TextStyle(
-                                              fontSize: isTablet ? 12 : 11,
-                                            ),
-                                          ),
-                                          style:
-                                              ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blueAccent,
-                                            foregroundColor: Colors.white,
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: isTablet ? 12 : 8,
-                                              vertical: isTablet ? 8 : 6,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                        ),
-                                      SizedBox(width: isTablet ? 12 : 8),
-                                      ElevatedButton.icon(
-                                        onPressed: () {
-                                          notificationProvider
-                                              .removeNotification(index);
-                                        },
-                                        icon: const Icon(Icons.delete, size: 16),
-                                        label: Text(
-                                          'Hapus',
-                                          style: TextStyle(
-                                            fontSize: isTablet ? 12 : 11,
-                                          ),
-                                        ),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red[400],
-                                          foregroundColor: Colors.white,
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: isTablet ? 12 : 8,
-                                            vertical: isTablet ? 8 : 6,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
+                      if (type == 'schedule') {
+                        return _buildScheduleNotificationCard(
+                          context,
+                          notification,
+                          isRead,
+                          isTablet,
+                          index,
+                          notificationProvider,
+                        );
+                      } else {
+                        return _buildGeneralNotificationCard(
+                          context,
+                          notification,
+                          isRead,
+                          isTablet,
+                          index,
+                          notificationProvider,
+                        );
+                      }
                     },
                   ),
                 ),
@@ -408,6 +244,279 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
+  Widget _buildGeneralNotificationCard(
+    BuildContext context,
+    Map<String, dynamic> notification,
+    bool isRead,
+    bool isTablet,
+    int index,
+    NotificationProvider provider,
+  ) {
+    return Container(
+      margin: EdgeInsets.only(bottom: isTablet ? 16 : 12),
+      decoration: BoxDecoration(
+        color: isRead ? Colors.white.withOpacity(0.8) : Colors.white,
+        border: Border.all(
+          color: isRead ? Colors.grey[300]! : Colors.orangeAccent,
+          width: isRead ? 1 : 2,
+        ),
+        borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(isTablet ? 20 : 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(isTablet ? 12 : 10),
+                  decoration: BoxDecoration(
+                    color: Colors.orangeAccent.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.info_outline,
+                    color: Colors.orange[700],
+                    size: isTablet ? 24 : 20,
+                  ),
+                ),
+                SizedBox(width: isTablet ? 15 : 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        notification['judul'] ?? 'Notifikasi',
+                        style: TextStyle(
+                          fontWeight:
+                              isRead ? FontWeight.normal : FontWeight.bold,
+                          fontSize: isTablet ? 18 : 16,
+                          color: isRead ? Colors.black87 : Colors.orange[700],
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 6 : 4),
+                      Text(
+                        notification['keterangan'] ?? 'Tidak ada deskripsi',
+                        style: TextStyle(
+                          fontSize: isTablet ? 14 : 12,
+                          color: Colors.grey[600],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isTablet ? 16 : 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _formatTime(notification['created_at']),
+                  style: TextStyle(
+                    fontSize: isTablet ? 13 : 12,
+                    color: Colors.grey[500],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                notification['id_notifikasi'] == null
+                    ? ElevatedButton.icon(
+                        onPressed: () {
+                          provider.removeGeneralNotification(
+                            provider.generalNotifications.indexOf(notification),
+                          );
+                        },
+                        icon: const Icon(Icons.delete, size: 16),
+                        label: Text(
+                          'Hapus',
+                          style: TextStyle(
+                            fontSize: isTablet ? 12 : 11,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red[400],
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isTablet ? 12 : 8,
+                            vertical: isTablet ? 8 : 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScheduleNotificationCard(
+    BuildContext context,
+    Map<String, dynamic> notification,
+    bool isRead,
+    bool isTablet,
+    int index,
+    NotificationProvider provider,
+  ) {
+    return Container(
+      margin: EdgeInsets.only(bottom: isTablet ? 16 : 12),
+      decoration: BoxDecoration(
+        color: isRead ? Colors.white.withOpacity(0.8) : Colors.white,
+        border: Border.all(
+          color: isRead ? Colors.grey[300]! : Colors.blueAccent,
+          width: isRead ? 1 : 2,
+        ),
+        borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(isTablet ? 20 : 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(isTablet ? 12 : 10),
+                  decoration: BoxDecoration(
+                    color: Colors.greenAccent.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.calendar_today_outlined,
+                    color: Colors.green[700],
+                    size: isTablet ? 24 : 20,
+                  ),
+                ),
+                SizedBox(width: isTablet ? 15 : 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Jadwal Baru',
+                        style: TextStyle(
+                          fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                          fontSize: isTablet ? 18 : 16,
+                          color: isRead ? Colors.black87 : Colors.blueAccent,
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 6 : 4),
+                      Text(
+                        'Admin telah membuat jadwal baru',
+                        style: TextStyle(
+                          fontSize: isTablet ? 14 : 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isTablet ? 16 : 12),
+            Container(
+              padding: EdgeInsets.all(isTablet ? 16 : 12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.blueAccent.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDetailRow(
+                    context,
+                    Icons.calendar_month_outlined,
+                    'Tanggal',
+                    notification['tanggal'] ?? '-',
+                    isTablet,
+                  ),
+                  SizedBox(height: isTablet ? 12 : 8),
+                  _buildDetailRow(
+                    context,
+                    Icons.today_outlined,
+                    'Hari',
+                    notification['nama_hari'] ?? '-',
+                    isTablet,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: isTablet ? 16 : 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _formatTime(notification['notificationTime']),
+                  style: TextStyle(
+                    fontSize: isTablet ? 13 : 12,
+                    color: Colors.grey[500],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                Row(
+                  children: [
+                    notification['id_schedule'] == null
+                        ? ElevatedButton.icon(
+                            onPressed: () {
+                              provider.removeNotification(index);
+                            },
+                            icon: const Icon(Icons.delete, size: 16),
+                            label: Text(
+                              'Hapus',
+                              style: TextStyle(
+                                fontSize: isTablet ? 12 : 11,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red[400],
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isTablet ? 12 : 8,
+                                vertical: isTablet ? 8 : 6,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDetailRow(BuildContext context, IconData icon, String label,
       String value, bool isTablet) {
     return Row(
@@ -441,10 +550,24 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  String _formatTime(DateTime? dateTime) {
+  String _formatTime(dynamic dateTime) {
     if (dateTime == null) return '-';
+    
+    DateTime parsedDate;
+    if (dateTime is DateTime) {
+      parsedDate = dateTime;
+    } else if (dateTime is String) {
+      try {
+        parsedDate = DateTime.parse(dateTime);
+      } catch (e) {
+        return '-';
+      }
+    } else {
+      return '-';
+    }
+
     final now = DateTime.now();
-    final difference = now.difference(dateTime);
+    final difference = now.difference(parsedDate);
 
     if (difference.inMinutes < 1) {
       return 'Baru saja';

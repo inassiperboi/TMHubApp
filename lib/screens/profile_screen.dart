@@ -28,7 +28,7 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: const Color(0xFF1E4471), // #1E4471
         foregroundColor: Colors.white,
       ),
       body: Container(

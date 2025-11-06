@@ -57,8 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return BottomNavigationBar(
       currentIndex: _selectedIndex,
       onTap: (index) => setState(() => _selectedIndex = index),
-      selectedItemColor: Colors.blueAccent,
-      unselectedItemColor: Colors.grey,
+      backgroundColor: const Color(0xFF1E4471), // #1E4471
+      selectedItemColor: Colors.white,
+      unselectedItemColor: Colors.white70,
       type: BottomNavigationBarType.fixed,
       items: const [
         BottomNavigationBarItem(
@@ -111,7 +112,7 @@ class _HomeContent extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: const Color(0xFF1E4471), // #1E4471
         foregroundColor: Colors.white,
       ),
       body: Container(
