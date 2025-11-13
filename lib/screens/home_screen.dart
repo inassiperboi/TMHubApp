@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/schedule_provider.dart';
+import '../providers/location_provider.dart';
 import 'attendance_history_screen.dart';
 import 'profile_screen.dart';
-import 'notification_screen.dart'; // ... existing code ...
+import 'notification_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,21 +28,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _initializeData() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final scheduleProvider = Provider.of<ScheduleProvider>(context, listen: false);
-    
+    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+
     print('[v0] Home Screen Init - UserID: ${authProvider.userId}, UserName: ${authProvider.userName}');
-    
+
     if (authProvider.userId == null || authProvider.userName == null) {
       print('[v0] ERROR: User data incomplete - UserID: ${authProvider.userId}, UserName: ${authProvider.userName}');
       setState(() => _dataInitialized = true);
       return;
     }
-    
+
+    // 🧭 Inilah baris penting agar lokasi langsung diperbarui
+    await locationProvider.getCurrentLocation();
+
     await scheduleProvider.fetchTodaySchedule();
     await scheduleProvider.checkAttendanceStatus(authProvider.userId!);
-    
+
     setState(() => _dataInitialized = true);
   }
 
@@ -57,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return BottomNavigationBar(
       currentIndex: _selectedIndex,
       onTap: (index) => setState(() => _selectedIndex = index),
-      backgroundColor: const Color(0xFF1E4471), // #1E4471
+      backgroundColor: const Color(0xFF1E4471),
       selectedItemColor: Colors.white,
       unselectedItemColor: Colors.white70,
       type: BottomNavigationBarType.fixed,
@@ -97,11 +102,12 @@ class _HomeContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final scheduleProvider = Provider.of<ScheduleProvider>(context);
+    final locationProvider = Provider.of<LocationProvider>(context);
     
     final selectedDate = scheduleProvider.selectedScheduleDate ?? 'Tanggal tidak tersedia';
     final selectedDay = scheduleProvider.selectedScheduleDay ?? 'Hari tidak tersedia';
     final attendanceStatus = scheduleProvider.attendanceStatus ?? 'Belum Absen';
-    final hasSubmittedToday = scheduleProvider.hasSubmittedToday; // get submission status
+    final hasSubmittedToday = scheduleProvider.hasSubmittedToday;
 
     bool userDataComplete = auth.userId != null && auth.userName != null;
 
@@ -112,7 +118,7 @@ class _HomeContent extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFF1E4471), // #1E4471
+        backgroundColor: const Color(0xFF1E4471),
         foregroundColor: Colors.white,
       ),
       body: Container(
@@ -125,206 +131,317 @@ class _HomeContent extends StatelessWidget {
         ),
         child: scheduleProvider.isLoading
             ? const Center(child: CircularProgressIndicator())
-            : Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    // CARD TANGGAL HARI INI
-                    Card(
-                      elevation: 6,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20)),
+            : SafeArea(
+                child: SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: MediaQuery.of(context).size.height -
+                                 AppBar().preferredSize.height -
+                                 MediaQuery.of(context).padding.top -
+                                 MediaQuery.of(context).padding.bottom,
+                    ),
+                    child: IntrinsicHeight(
                       child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
                           children: [
-                            const CircleAvatar(
-                              radius: 30,
-                              backgroundColor: Colors.blueAccent,
-                              child: Icon(Icons.calendar_today,
-                                  color: Colors.white, size: 28),
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                      // CARD TANGGAL HARI INI
+                      Card(
+                        elevation: 6,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            children: [
+                              const CircleAvatar(
+                                radius: 30,
+                                backgroundColor: Colors.blueAccent,
+                                child: Icon(Icons.calendar_today,
+                                    color: Colors.white, size: 28),
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Tanggal Hari Ini',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey[800],
+                                      ),
+                                    ),
+                                    Text(
+                                      selectedDate,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        color: Colors.blueAccent,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      selectedDay,
+                                      style: const TextStyle(
+                                          fontSize: 15, color: Colors.black54),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // CARD STATUS LOKASI
+                      Card(
+                        elevation: 6,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              Row(
                                 children: [
-                                  Text(
-                                    'Tanggal Hari Ini',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey[800],
-                                    ),
+                                  Icon(
+                                    Icons.location_on,
+                                    color: locationProvider.isWithinOfficeRadius
+                                        ? Colors.green
+                                        : Colors.redAccent,
+                                    size: 24,
                                   ),
-                                  Text(
-                                    selectedDate,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.blueAccent,
-                                      fontWeight: FontWeight.bold,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Status Lokasi',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          locationProvider.isWithinOfficeRadius
+                                              ? 'Anda berada di kantor'
+                                              : 'Anda berada di luar kantor',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: locationProvider.isWithinOfficeRadius
+                                                ? Colors.green
+                                                : Colors.redAccent,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    selectedDay,
-                                    style: const TextStyle(
-                                        fontSize: 15, color: Colors.black54),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
+                              if (locationProvider.distanceFromOffice != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 12.0),
+                                  child: Text(
+                                    'Jarak dari kantor: ${(locationProvider.distanceFromOffice! / 1000).toStringAsFixed(2)} km',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
 
-                    const SizedBox(height: 30),
+                      const SizedBox(height: 30),
 
-                    // CARD STATUS ABSENSI
-                    Card(
-                      color: Colors.white,
-                      elevation: 6,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20)),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 30, horizontal: 20),
-                        child: Column(
-                          children: [
-                            const Text(
-                              'Status Absensi Kamu',
-                              style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              attendanceStatus,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: attendanceStatus == 'Belum Absen'
-                                    ? Colors.redAccent
-                                    : attendanceStatus == 'Hadir'
-                                        ? Colors.green
+                      // CARD STATUS ABSENSI
+                      Card(
+                        color: Colors.white,
+                        elevation: 6,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 30, horizontal: 20),
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Status Absensi Kamu',
+                                style: TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                attendanceStatus,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: attendanceStatus == 'Belum Absen'
+                                      ? Colors.redAccent
+                                      : attendanceStatus == 'Hadir'
+                                          ? Colors.green
+                                          : Colors.orangeAccent,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 30),
+
+                              // Tombol Hadir
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.login,
+                                      color: Colors.white),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: hasSubmittedToday
+                                        ? Colors.grey
+                                        : !locationProvider.isWithinOfficeRadius
+                                            ? Colors.grey
+                                            : Colors.green,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: (hasSubmittedToday ||
+                                          !locationProvider.isWithinOfficeRadius)
+                                      ? null
+                                      : () => _showHadirDialog(context, auth.userId,
+                                          auth.userName, locationProvider),
+                                  label: Text(
+                                    hasSubmittedToday
+                                        ? 'Sudah Absen Hari Ini'
+                                        : !locationProvider.isWithinOfficeRadius
+                                            ? 'Hadir (Di Luar Kantor)'
+                                            : 'Hadir',
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 15),
+
+                              // Tombol Ijin
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.access_time_filled,
+                                      color: Colors.white),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: hasSubmittedToday
+                                        ? Colors.grey
                                         : Colors.orangeAccent,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 30),
-
-                            // Tombol Hadir
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton.icon(
-                                icon: const Icon(Icons.login,
-                                    color: Colors.white),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: hasSubmittedToday ? Colors.grey : Colors.green,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: hasSubmittedToday
+                                      ? null
+                                      : () => _showIjinDialog(context, auth.userId,
+                                          auth.userName),
+                                  label: Text(
+                                    hasSubmittedToday
+                                        ? 'Sudah Absen Hari Ini'
+                                        : 'Ajukan Ijin',
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 ),
-                                onPressed: hasSubmittedToday 
-                                  ? null 
-                                  : () => _showHadirDialog(context, auth.userId, auth.userName),
-                                label: Text(
-                                  hasSubmittedToday ? 'Sudah Absen Hari Ini' : 'Hadir',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
-                                ),
                               ),
-                            ),
 
-                            const SizedBox(height: 15),
-
-                            // Tombol Ijin
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton.icon(
-                                icon: const Icon(Icons.access_time_filled,
-                                    color: Colors.white),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: hasSubmittedToday ? Colors.grey : Colors.orangeAccent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                              if (scheduleProvider.errorMessage != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 16.0),
+                                  child: Text(
+                                    scheduleProvider.errorMessage!,
+                                    style: const TextStyle(
+                                      color: Colors.redAccent,
+                                      fontSize: 12,
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
-                                onPressed: hasSubmittedToday 
-                                  ? null 
-                                  : () => _showIjinDialog(context, auth.userId, auth.userName),
-                                label: Text(
-                                  hasSubmittedToday ? 'Sudah Absen Hari Ini' : 'Ajukan Ijin',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ),
 
-                            if (scheduleProvider.errorMessage != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 16.0),
+                              if (locationProvider.locationError != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 12.0),
+                                  child: Text(
+                                    locationProvider.locationError!,
+                                    style: const TextStyle(
+                                      color: Colors.redAccent,
+                                      fontSize: 12,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      if (!userDataComplete)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red[100],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.redAccent),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.error_outline, color: Colors.red[700]),
+                              const SizedBox(width: 12),
+                              Expanded(
                                 child: Text(
-                                  scheduleProvider.errorMessage!,
-                                  style: const TextStyle(
-                                    color: Colors.redAccent,
+                                  'Data pengguna tidak lengkap. Silakan login kembali.',
+                                  style: TextStyle(
+                                    color: Colors.red[700],
                                     fontSize: 12,
                                   ),
-                                  textAlign: TextAlign.center,
                                 ),
                               ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
 
-                    const Spacer(),
+                      const Spacer(),
 
-                    if (!userDataComplete)
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red[100],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.redAccent),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline, color: Colors.red[700]),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Data pengguna tidak lengkap. Silakan login kembali.',
-                                style: TextStyle(
-                                  color: Colors.red[700],
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      const Text(
+                        '© 2025 AttendEase - Sistem Presensi trustmedis',
+                        style: TextStyle(color: Colors.black54, fontSize: 12),
                       ),
 
-                    const SizedBox(height: 16),
-
-                    // Footer
-                    const Text(
-                      '© 2025 AttendEase - Sistem Absensi Digital',
-                      style: TextStyle(color: Colors.black54, fontSize: 12),
-                    ),
-                  ],
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  void _showHadirDialog(BuildContext context, String? userId, String? userName) {
+  void _showHadirDialog(BuildContext context, String? userId, String? userName,
+      LocationProvider locationProvider) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -400,37 +517,55 @@ class _HomeContent extends StatelessWidget {
                       horizontal: 16,
                       vertical: 12,
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.info_outline,
-                          color: Colors.white,
-                          size: 20,
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Keterangan',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Keterangan',
-                                style: TextStyle(
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Karyawan bekerja hari ini',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Lokasi: ${(locationProvider.distanceFromOffice! / 1000).toStringAsFixed(2)} km dari kantor',
+                                style: const TextStyle(
                                   fontSize: 12,
                                   color: Colors.white70,
-                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                'Karyawan bekerja hari ini',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -457,6 +592,7 @@ class _HomeContent extends StatelessWidget {
                           userId,
                           userName,
                           'Karyawan bekerja hari ini',
+                          locationProvider,
                         );
                       },
                       child: const Text(
@@ -627,6 +763,7 @@ class _HomeContent extends StatelessWidget {
                           userId,
                           userName,
                           keteranganController.text.trim(),
+                          null,
                         );
                       },
                       child: const Text(
@@ -678,7 +815,8 @@ class _HomeContent extends StatelessWidget {
     String status,
     String? userId,
     String? userName,
-    String keterangan, // add keterangan parameter
+    String keterangan,
+    LocationProvider? locationProvider,
   ) async {
     if (userId == null || userName == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -697,7 +835,10 @@ class _HomeContent extends StatelessWidget {
       userId: userId,
       userName: userName,
       status: status,
-      keterangan: keterangan, // pass keterangan to provider
+      keterangan: keterangan,
+      latitude: locationProvider?.currentPosition?.latitude,
+      longitude: locationProvider?.currentPosition?.longitude,
+      distance: locationProvider?.distanceFromOffice,
     );
 
     if (success) {

@@ -8,6 +8,7 @@ import 'providers/attendance_history_provider.dart';
 import 'providers/notification_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'providers/location_provider.dart'; // added location provider import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +42,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => NotificationProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => LocationProvider(), // added location provider
         ),
       ],
       child: MaterialApp(

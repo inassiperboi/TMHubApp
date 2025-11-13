@@ -4,6 +4,10 @@
     <!-- Izinkan akses internet -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Tambahkan izin lokasi untuk fitur geolocation absensi -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <application
         android:label="TMHub"
         android:name="${applicationName}"

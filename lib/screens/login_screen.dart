@@ -105,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 60),
                   const Text(
-                    'TrustMedis',
+                    'TMHub',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w800,
@@ -116,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Sistem Presensi Perusahaan',
+                    'Sistem Presensi trustmedis',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey,

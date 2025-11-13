@@ -23,6 +23,7 @@ dependencies:
   supabase_flutter: ^2.5.0
   crypto: ^3.0.3
   flutter_native_splash: ^2.4.6
+  geolocator: ^11.0.0
 
 dev_dependencies:
   flutter_test:

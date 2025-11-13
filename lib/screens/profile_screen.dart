@@ -97,7 +97,7 @@ class ProfileScreen extends StatelessWidget {
                     child: Padding(
                       padding: EdgeInsets.symmetric(vertical: isTablet ? 15 : 10),
                       child: Text(
-                        '© 2025 AttendEase - Sistem Absensi Digital',
+                        '© 2025 AttendEase - Sistem Presensi trustmedis',
                         style: TextStyle(
                           color: Colors.black54,
                           fontSize: isSmallPhone ? 10 : isMediumPhone ? 12 : isTablet ? 14 : 11,

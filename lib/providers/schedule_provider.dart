@@ -153,10 +153,14 @@ class ScheduleProvider extends ChangeNotifier {
     required String userId,
     required String userName,
     required String status,
-    String? keterangan, // add keterangan parameter
+    String? keterangan,
+    double? latitude,
+    double? longitude,
+    double? distance,
   }) async {
     try {
       print('[v0] Submitting attendance - Status: $status, User: $userName, UserID: $userId');
+      print('[v0] Location: Lat=$latitude, Lng=$longitude, Distance=$distance');
       print('[v0] Selected Schedule ID: $_selectedScheduleId (type: ${_selectedScheduleId.runtimeType})');
 
       if (_hasSubmittedToday) {
@@ -192,7 +196,10 @@ class ScheduleProvider extends ChangeNotifier {
             .update({
               'status': status,
               'tanggal': _selectedScheduleDate,
-              'keterangan': keterangan ?? '', // update keterangan field
+              'keterangan': keterangan ?? '',
+              'latitude': latitude,
+              'longitude': longitude,
+              'distance': distance,
             })
             .eq('id_user', userIdInt)
             .eq('id_schedule', scheduleIdInt);
@@ -207,13 +214,16 @@ class ScheduleProvider extends ChangeNotifier {
               'id_schedule': scheduleIdInt,
               'status': status,
               'tanggal': _selectedScheduleDate,
-              'keterangan': keterangan ?? '', // add keterangan on insert
+              'keterangan': keterangan ?? '',
+              'latitude': latitude,
+              'longitude': longitude,
+              'distance': distance,
               'created_at': DateTime.now().toIso8601String(),
             });
       }
 
       _attendanceStatus = status;
-      _hasSubmittedToday = true; // mark as submitted
+      _hasSubmittedToday = true;
       _errorMessage = null;
       notifyListeners();
       print('[v0] Attendance submitted successfully');
